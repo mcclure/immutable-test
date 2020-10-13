@@ -68,7 +68,6 @@ class ListEdit extends Component<ListEditProps, ListEditState> {
 // None of the VNode stuff is exported, so this has to all be untyped.
 // This is violating abstraction boundaries in order to debug internal structures.
 function nodeToDiv(list:any, node:any) {
-  console.log(node)
   if (typeof node == "object" && node["@@__IMMUTABLE_SORTED_LIST_NODE__@@"]) {
     const isHead = list.head == node
     const isTail = list.tail == node
