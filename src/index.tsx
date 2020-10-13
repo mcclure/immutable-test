@@ -1,7 +1,7 @@
 import { h, render, Component } from "preact";
 import linkState from 'linkstate';
 import { State, WrapStateContexts } from "./state"
-import { List } from "immutable"
+import { SortedList } from "immutable"
 
 declare let require:any
 
@@ -18,7 +18,7 @@ function numericOrUnchanged<T>(str:T) : number|T {
 
 // ----- Data -----
 
-const data = new State(List<number|string>())
+const data = new State(SortedList<number|string>())
 
 // ----- Display helpers -----
 
@@ -30,7 +30,7 @@ const data = new State(List<number|string>())
 
 // Modal "pick a username" box
 type ListEditState = {entry:string}
-type ListEditProps = {targetState:State<List<number|string>>}
+type ListEditProps = {targetState:State<SortedList<number|string>>}
 class ListEdit extends Component<ListEditProps, ListEditState> {
   constructor(props:ListEditProps) {
     super(props)
@@ -41,7 +41,7 @@ class ListEdit extends Component<ListEditProps, ListEditState> {
     const entry = numericOrUnchanged(this.state.entry)
     if (entry != null) { // Intentionally catches undefined also
       console.log(`Pushing: ${String(entry)}`)
-      targetState.set(targetState.value.push(entry))
+      targetState.set(targetState.value.add(entry))
       this.setState({entry:''})
     }
   }
@@ -65,17 +65,57 @@ class ListEdit extends Component<ListEditProps, ListEditState> {
   }
 }
 
-function ListDisplay<T>({targetState}:{targetState:State<List<T>>}) {
-  const list = targetState.get()
-  let keyId = 0
-  // Convert list list.toSeq().map(s => <div>{s}</div>).toArray() would work if you need ES5 support
-  const listDivs = Array.from(list, e => {
-    keyId++
-    return <div className="ListItem" key={keyId}>{String(e)}</div>
-  })
+// None of the VNode stuff is exported, so this has to all be untyped.
+// This is violating abstraction boundaries in order to debug internal structures.
+function nodeToDiv(list:any, node:any) {
+  console.log(node)
+  if (typeof node == "object" && node["@@__IMMUTABLE_SORTED_LIST_NODE__@@"]) {
+    const isHead = list.head == node
+    const isTail = list.tail == node
 
+    let id = null
+    if (isHead && isTail) id = "headTail"
+    else if (isHead) id = "head"
+    else if (isTail) id = "tail"
+
+    let headMarker = null
+    if (isHead) headMarker = <div className="NodeMetaHead">Head</div>
+    let tailMarker = null
+    if (isTail) tailMarker = <div className="NodeMetaTail">Tail</div>
+
+    let children = node.array.map((child:any) => nodeToDiv(list, child))
+
+    return <div className="NodeDisplay">
+      <div className="NodeMeta">
+        <div className="NodeMetaMin">
+          Min: {String(node.min)}
+        </div>
+        <div className="NodeMetaMax">
+          Max: {String(node.max)}
+        </div>
+        {headMarker}
+        {tailMarker}
+      </div>
+      <div className="NodeContent">
+        {children}
+      </div>
+    </div>
+  } else {
+    return <div className="NodeContent">
+      {String(node)}
+    </div>
+  }
+}
+
+function ListDisplay<T>({targetState}:{targetState:State<SortedList<T>>}) {
+  const list = targetState.get()
+  console.log(list)
   return <div className="ListDisplay">
-    {listDivs}
+    <div className="ListMeta">Size: {(list as any).size}</div>
+    <div className="ListMeta">Depth: {(list as any)._level}</div>
+    <div className="ListContent">
+      {nodeToDiv(list, (list as any)._root)}
+    </div>
   </div>
 }
 
