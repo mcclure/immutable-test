@@ -16,6 +16,12 @@ function numericOrUnchanged<T>(str:T) : number|T {
   return isNumber ? parsedAsNumber : str
 }
 
+function typedFormat(v:any) {
+  return typeof v == "string" ?
+    v :
+    `(${typeof v}) ${String(v)}`
+}
+
 // ----- Data -----
 
 const data = new State(SortedList<number|string>())
@@ -69,28 +75,28 @@ class ListEdit extends Component<ListEditProps, ListEditState> {
 // This is violating abstraction boundaries in order to debug internal structures.
 function nodeToDiv(list:any, node:any) {
   if (typeof node == "object" && node["@@__IMMUTABLE_SORTED_LIST_NODE__@@"]) {
-    const isHead = list.head == node
-    const isTail = list.tail == node
+    const isHead = list._head == node
+    const isTail = list._tail == node
 
-    let id = null
+    let id:string = undefined
     if (isHead && isTail) id = "headTail"
     else if (isHead) id = "head"
     else if (isTail) id = "tail"
 
     let headMarker = null
-    if (isHead) headMarker = <div className="NodeMetaHead">Head</div>
+    if (isHead) headMarker = <div className="NodeMetaHead">(Head)</div>
     let tailMarker = null
-    if (isTail) tailMarker = <div className="NodeMetaTail">Tail</div>
+    if (isTail) tailMarker = <div className="NodeMetaTail">(Tail)</div>
 
     let children = node.array.map((child:any) => nodeToDiv(list, child))
 
-    return <div className="NodeDisplay">
+    return <div className="NodeDisplay" id={id}>
       <div className="NodeMeta">
         <div className="NodeMetaMin">
-          Min: {String(node.min)}
+          Min: {typedFormat(node.min)}
         </div>
         <div className="NodeMetaMax">
-          Max: {String(node.max)}
+          Max: {typedFormat(node.max)}
         </div>
         {headMarker}
         {tailMarker}
@@ -100,8 +106,8 @@ function nodeToDiv(list:any, node:any) {
       </div>
     </div>
   } else {
-    return <div className="NodeContent">
-      {String(node)}
+    return <div className="NodeData">
+      {typedFormat(node)}
     </div>
   }
 }

@@ -4,3 +4,14 @@ body { font-family:sans-serif; }
 .EditBox input { margin:0.25em; }
 
 .ListDisplay { margin-left:1em; margin-top:1em; }
+
+.NodeDisplay, .NodeData { border: 1px; border-color:black; border-style:solid; margin:0.25em; padding:0.25em; }
+
+.NodeData { background-color: #E7E7E7; }
+
+#headTail { background-color: #d4c2e1; }
+#head { background-color:#f0c9d7; }
+#tail { background-color:#bdd7ea; }
+
+.NodeMetaHead { font-weight:bold; }
+.NodeMetaTail { font-weight:bold; }
