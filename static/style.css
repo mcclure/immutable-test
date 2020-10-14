@@ -5,13 +5,29 @@ body { font-family:sans-serif; }
 
 .ListDisplay { margin-left:1em; margin-top:1em; }
 
-.NodeDisplay, .NodeData { border: 1px; border-color:black; border-style:solid; margin:0.25em; padding:0.25em; }
+.ListMeta { display:flex; flex-direction:row; margin-bottom:0.25em;}
+.ListMetaItem:not(:first-child) { margin-left:1em; } 
+
+.NodeDisplay, .NodeData { border-width: 1px; border-color:black; border-style:solid; padding:0.25em; }
+.ListContent > .NodeDisplay, .ListContent > .NodeData { border-width:2px !important; }
+
+.NodeContent .NodeDisplay:not(:first-child), .NodeContent .NodeData:not(:first-child) { margin-top:0.25em; }
+
+.NodeDisplay { display:flex; flex-direction:row; }
+.NodeMeta { margin-right:0.5em; }
+.NodeMeta div:not(:first-child) { margin-top:0.25em; }
 
 .NodeData { background-color: #E7E7E7; }
 
+.DataString, .DataNumber, .DataSpecial, .DataOther { display:inline; }
+.DataNumber, .DataSpecial { font-weight:bold; }
+.DataNumber { color:#3E0000; }
+
 #headTail { background-color: #d4c2e1; }
 #head { background-color:#f0c9d7; }
+.NodeMetaHead { color:#7B241C; }
 #tail { background-color:#bdd7ea; }
+.NodeMetaTail { color:#154360; }
 
 .NodeMetaHead { font-weight:bold; }
 .NodeMetaTail { font-weight:bold; }

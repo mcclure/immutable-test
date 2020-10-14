@@ -17,9 +17,14 @@ function numericOrUnchanged<T>(str:T) : number|T {
 }
 
 function typedFormat(v:any) {
-  return typeof v == "string" ?
-    v :
-    `(${typeof v}) ${String(v)}`
+  let type = typeof v
+  if (type == "string")
+    return <div className="DataString">{`"${v}"`}</div>
+  if (type == "number")
+    return <div className="DataNumber">{String(v)}</div>
+  if (type == "boolean" || type == "undefined" || v == "null")
+    return <div className="DataSpecial">{String(v)}</div>
+  return <div className="DataOther">{String(v)}</div>
 }
 
 // ----- Data -----
@@ -116,8 +121,10 @@ function ListDisplay<T>({targetState}:{targetState:State<SortedList<T>>}) {
   const list = targetState.get()
   console.log(list)
   return <div className="ListDisplay">
-    <div className="ListMeta">Size: {(list as any).size}</div>
-    <div className="ListMeta">Depth: {(list as any)._level}</div>
+    <div className="ListMeta">
+      <div className="ListMetaItem">Size: <div className="DataNumber">{(list as any).size}</div></div>
+      <div className="ListMetaItem">Depth: <div className="DataNumber">{(list as any)._level}</div></div>
+    </div>
     <div className="ListContent">
       {nodeToDiv(list, (list as any)._root)}
     </div>
