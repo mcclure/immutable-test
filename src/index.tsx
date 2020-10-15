@@ -29,7 +29,29 @@ function typedFormat(v:any) {
 
 // ----- Data -----
 
-const data = new State(SortedList<number|string>())
+type dataListType = State<SortedList<number|string>>
+
+const data : dataListType = new State(SortedList<number|string>())
+
+// ----- Data processes -----
+
+function randomSequence<T>(targetState:State<SortedList<number | T>>, count:number, pctAdd : number) {
+  const add = Math.random() < pctAdd
+  const value = targetState.value
+
+  if (add || value.size == 0) {
+    const addValue = Math.round(Math.random()*10000)
+    console.log(`Random sequence ${count}, add ${ addValue }`)
+    targetState.set( value.add(addValue) )
+  } else {
+    const side = Math.random() < 0.5
+    console.log(`Random sequence ${count}, pop ${ side ? value.first() : value.last() }`)
+    targetState.set( side ? value.shift() : value.pop() )
+  }
+
+  if (count > 1)
+    requestAnimationFrame(() => { randomSequence(targetState, count-1, pctAdd) })
+}
 
 // ----- Display helpers -----
 
@@ -41,7 +63,7 @@ const data = new State(SortedList<number|string>())
 
 // Modal "pick a username" box
 type ListEditState = {entry:string}
-type ListEditProps = {targetState:State<SortedList<number|string>>}
+type ListEditProps = {targetState:dataListType}
 class ListEdit extends Component<ListEditProps, ListEditState> {
   constructor(props:ListEditProps) {
     super(props)
@@ -67,6 +89,7 @@ class ListEdit extends Component<ListEditProps, ListEditState> {
     targetState.set(targetState.value.pop())
   }
   render() {
+    const targetState = this.props.targetState
     return (
       <div className="EditBox">
         <form onSubmit={(e)=>{e.preventDefault(); this.handlePush(); return true}}>
@@ -77,6 +100,9 @@ class ListEdit extends Component<ListEditProps, ListEditState> {
           <input type="button" onClick={(e) => {this.handleShift(); return true}} value="Shift" />
           <input type="button" onClick={(e) => {this.handlePop(); return true}} value="Pop" />
         </form>
+        <div className="ListMetaSpacer">|</div>
+        <input type="button" onClick={(e) => {randomSequence(targetState, 100, 2/3)}} value="Random 100+" />
+        <input type="button" onClick={(e) => {randomSequence(targetState, 100, 1/3)}} value="Random 100-" />
       </div>
     )
   }
