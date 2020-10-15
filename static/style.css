@@ -1,7 +1,7 @@
 body { font-family:sans-serif; }
 
-.EditBox { margin-left:-0.25em; display:flex; flex-direction:row; } /* Left-flush despite input margin */
-.EditBox input, .EditBox > div { margin:0.25em; }
+.EditBox { margin-left:-0.25em; display:flex; flex-direction:row; justify-content:space-between; } /* Left-flush despite input margin */
+.EditBox input, .EditBox .EditBoxSpacer { margin:0.25em; }
 
 .ListDisplay { margin-left:1em; margin-top:1em; }
 

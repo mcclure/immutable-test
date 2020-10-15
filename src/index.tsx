@@ -92,7 +92,7 @@ class ListEdit extends Component<ListEditProps, ListEditState> {
     const targetState = this.props.targetState
     return (
       <div className="EditBox">
-        <form onSubmit={(e)=>{e.preventDefault(); this.handlePush(); return true}}>
+        <form className="EditBoxEntry" onSubmit={(e)=>{e.preventDefault(); this.handlePush(); return true}}>
           <label>
             <input type="text" value={this.state.entry} onInput={linkState(this, 'entry')} />
           </label>
@@ -100,9 +100,11 @@ class ListEdit extends Component<ListEditProps, ListEditState> {
           <input type="button" onClick={(e) => {this.handleShift(); return true}} value="Shift" />
           <input type="button" onClick={(e) => {this.handlePop(); return true}} value="Pop" />
         </form>
-        <div className="ListMetaSpacer">|</div>
-        <input type="button" onClick={(e) => {randomSequence(targetState, 100, 2/3)}} value="Random 100+" />
-        <input type="button" onClick={(e) => {randomSequence(targetState, 100, 1/3)}} value="Random 100-" />
+        <div className="EditBoxSpacer">|</div>
+        <div className="EditBoxSpecial">
+          <input type="button" onClick={(e) => {randomSequence(targetState, 100, 2/3)}} value="Random 100+" />
+          <input type="button" onClick={(e) => {randomSequence(targetState, 100, 1/3)}} value="Random 100-" />
+        </div>
       </div>
     )
   }
