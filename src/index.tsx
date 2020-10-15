@@ -56,6 +56,11 @@ class ListEdit extends Component<ListEditProps, ListEditState> {
       this.setState({entry:''})
     }
   }
+  handleShift() {
+    const targetState = this.props.targetState
+    console.log(`Shifting: ${String(targetState.value.first())}`)
+    targetState.set(targetState.value.shift())
+  }
   handlePop() {
     const targetState = this.props.targetState
     console.log(`Popping: ${String(targetState.value.last())}`)
@@ -69,6 +74,7 @@ class ListEdit extends Component<ListEditProps, ListEditState> {
             <input type="text" value={this.state.entry} onInput={linkState(this, 'entry')} />
           </label>
           <input type="submit" disabled={!Boolean(this.state.entry)} value="Add" />
+          <input type="button" onClick={(e) => {this.handleShift(); return true}} value="Shift" />
           <input type="button" onClick={(e) => {this.handlePop(); return true}} value="Pop" />
         </form>
       </div>
@@ -79,7 +85,7 @@ class ListEdit extends Component<ListEditProps, ListEditState> {
 // None of the VNode stuff is exported, so this has to all be untyped.
 // This is violating abstraction boundaries in order to debug internal structures.
 function nodeToDiv(list:any, node:any) {
-  if (typeof node == "object" && node["@@__IMMUTABLE_SORTED_LIST_NODE__@@"]) {
+  if (node && typeof node == "object" && node["@@__IMMUTABLE_SORTED_LIST_NODE__@@"]) {
     const isHead = list._head == node
     const isTail = list._tail == node
 
