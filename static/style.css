@@ -8,6 +8,8 @@ body { font-family:sans-serif; }
 .ListMeta { display:flex; flex-direction:row; margin-bottom:0.25em;}
 .ListMetaItem:not(:first-child) { margin-left:1em; } 
 
+.ListContent { display:flex; }
+
 .NodeDisplay, .NodeData { border-width: 1px; border-color:black; border-style:solid; padding:0.25em; }
 .ListContent > .NodeDisplay, .ListContent > .NodeData { border-width:2px !important; }
 
@@ -17,16 +19,16 @@ body { font-family:sans-serif; }
 .NodeMeta { margin-right:0.5em; }
 .NodeMeta div:not(:first-child) { margin-top:0.25em; }
 
-.NodeData { background-color: #E7E7E7; }
+.NodeData { background-color: #f2f2f2; }
 
 .DataString, .DataNumber, .DataSpecial, .DataOther { display:inline; }
 .DataNumber, .DataSpecial { font-weight:bold; }
 .DataNumber { color:#3E0000; }
 
-#headTail { background-color: #d4c2e1; }
-#head { background-color:#f0c9d7; }
+#headTail { background-color: #e9e0f0; }
+#head { background-color:#f7e3ea; }
 .NodeMetaHead { color:#7B241C; }
-#tail { background-color:#bdd7ea; }
+#tail { background-color:#dceaf4; }
 .NodeMetaTail { color:#154360; }
 
 .NodeMetaHead { font-weight:bold; }
