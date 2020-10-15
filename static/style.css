@@ -15,7 +15,7 @@ body { font-family:sans-serif; }
 
 .NodeContent .NodeDisplay:not(:first-child), .NodeContent .NodeData:not(:first-child) { margin-top:0.25em; }
 
-.NodeDisplay { display:flex; flex-direction:row; }
+.NodeDisplay { display:flex; flex-direction:row; justify-content:space-between; }
 .NodeMeta { margin-right:0.5em; }
 .NodeMeta div:not(:first-child) { margin-top:0.25em; }
 

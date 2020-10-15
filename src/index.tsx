@@ -68,7 +68,7 @@ class ListEdit extends Component<ListEditProps, ListEditState> {
           <label>
             <input type="text" value={this.state.entry} onInput={linkState(this, 'entry')} />
           </label>
-          <input type="submit" disabled={!Boolean(this.state.entry)} value="Push" />
+          <input type="submit" disabled={!Boolean(this.state.entry)} value="Add" />
           <input type="button" onClick={(e) => {this.handlePop(); return true}} value="Pop" />
         </form>
       </div>
