@@ -44,6 +44,23 @@ const optionWhitebox = new State(true);
 
 // ----- Data processes -----
 
+function findFirstFailure<T>(list:SortedList<T>) {
+  let haveLast = false
+  let last
+  let count = 0
+  for(let x of list) {
+    if (haveLast) {
+      if (last > x)
+        return [count, x]
+    } else {
+      haveLast = true
+    }
+    last = x
+    count++
+  }
+  return null
+}
+
 function randomSequence<T>(targetState:State<SortedList<number | T>>, count:number, pctAdd : number) {
   const add = Math.random() < pctAdd
   const value = targetState.value
@@ -57,6 +74,10 @@ function randomSequence<T>(targetState:State<SortedList<number | T>>, count:numb
     console.log(`Random sequence ${count}, pop ${ side ? value.first() : value.last() }`)
     targetState.set( side ? value.shift() : value.pop() )
   }
+
+  const failure = findFirstFailure(targetState.value);
+  if (failure)
+    throw new Error(`Ordering failure at index ${failure[0]}, value ${failure[1]}`)
 
   if (count > 1)
     requestAnimationFrame(() => { randomSequence(targetState, count-1, pctAdd) })
@@ -196,7 +217,7 @@ function ListDisplay<T>({targetState}:{targetState:State<SortedList<T>>}) {
       <div className="ListMetaItem">Size: <div className="DataNumber">{(list as any).size}</div></div>
       <div className="ListMetaItem">Depth: <div className="DataNumber">{(list as any)._level}</div></div>
     </div>
-    <div className={"ListContent"}>
+    <div className={whitebox ? "ListContent" : "ListContentOrdered"}>
       {whitebox ? nodeToDiv(list, (list as any)._root) : listToDiv(list)}
     </div>
   </div>
