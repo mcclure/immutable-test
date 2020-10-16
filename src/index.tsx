@@ -1,4 +1,4 @@
-import { h, render, Component } from "preact";
+import { h, render, Component, JSX } from "preact";
 import linkState from 'linkstate';
 import { State, WrapStateContexts } from "./state"
 import { SortedList } from "immutable"
@@ -27,11 +27,20 @@ function typedFormat(v:any) {
   return <div className="DataOther">{String(v)}</div>
 }
 
+function handle(f:()=>void) {
+  return (e:JSX.TargetedEvent) => {
+    e.preventDefault();
+    f();
+    return true;
+  }
+}
+
 // ----- Data -----
 
 type dataListType = State<SortedList<number|string>>
 
 const data : dataListType = new State(SortedList<number|string>())
+const optionWhitebox = new State(true);
 
 // ----- Data processes -----
 
@@ -62,12 +71,12 @@ function randomSequence<T>(targetState:State<SortedList<number | T>>, count:numb
 // But maybe that's a good thing.
 
 // Modal "pick a username" box
-type ListEditState = {entry:string}
+type ListEditState = {entry:string,whitebox:boolean}
 type ListEditProps = {targetState:dataListType}
 class ListEdit extends Component<ListEditProps, ListEditState> {
   constructor(props:ListEditProps) {
     super(props)
-    this.state = {entry:''}
+    this.state = {entry:'',whitebox:optionWhitebox.value}
   }
   handlePush() {
     const targetState = this.props.targetState
@@ -92,18 +101,25 @@ class ListEdit extends Component<ListEditProps, ListEditState> {
     const targetState = this.props.targetState
     return (
       <div className="EditBox">
-        <form className="EditBoxEntry" onSubmit={(e)=>{e.preventDefault(); this.handlePush(); return true}}>
+        <form className="EditBoxEntry" onSubmit={handle(()=>this.handlePush())}>
           <label>
             <input type="text" value={this.state.entry} onInput={linkState(this, 'entry')} />
           </label>
           <input type="submit" disabled={!Boolean(this.state.entry)} value="Add" />
-          <input type="button" onClick={(e) => {this.handleShift(); return true}} value="Shift" />
-          <input type="button" onClick={(e) => {this.handlePop(); return true}} value="Pop" />
+          <input type="button" onClick={handle(()=>this.handleShift())} value="Shift" />
+          <input type="button" onClick={handle(()=>this.handlePop())} value="Pop" />
         </form>
         <div className="EditBoxSpacer">|</div>
         <div className="EditBoxSpecial">
-          <input type="button" onClick={(e) => {randomSequence(targetState, 100, 2/3)}} value="Random 100+" />
-          <input type="button" onClick={(e) => {randomSequence(targetState, 100, 1/3)}} value="Random 100-" />
+          <a href="#" onClick={handle(()=>{optionWhitebox.set(true);this.setState({whitebox:true})})} className={this.state.whitebox ? "Highlighted" : undefined}>
+            White Box
+          </a>
+          <a href="#" onClick={handle(()=>{optionWhitebox.set(false);this.setState({whitebox:false})})} className={this.state.whitebox ? undefined : "Highlighted"}>
+            Black Box
+          </a>
+          <div className="EditBoxSpacer">|</div>
+          <input type="button" onClick={handle(()=>randomSequence(targetState, 100, 2/3))} value="Random 100+" />
+          <input type="button" onClick={handle(()=>randomSequence(targetState, 100, 1/3))} value="Random 100-" />
         </div>
       </div>
     )
@@ -151,16 +167,37 @@ function nodeToDiv(list:any, node:any) {
   }
 }
 
+function listToDiv<T>(list:SortedList<T>) {
+  const display = []
+  let haveLast = false
+  let last
+  for(let x of list) {
+    let good = true
+    if (haveLast) {
+      good = !(last > x)
+    } else {
+      haveLast = true
+    }
+    last = x
+    display.push(<div className={good ? "NodeContentOrdered" : "NodeContentOrderedError"}>{typedFormat(x)}</div>)
+  }
+  return <div className="NodeDataOrdered">
+    {display}
+  </div>
+}
+
 function ListDisplay<T>({targetState}:{targetState:State<SortedList<T>>}) {
   const list = targetState.get()
-  console.log(list)
+  const whitebox = optionWhitebox.get()
+  console.log(list) // FIXME: Shouldn't trigger on whitebox change
+
   return <div className="ListDisplay">
     <div className="ListMeta">
       <div className="ListMetaItem">Size: <div className="DataNumber">{(list as any).size}</div></div>
       <div className="ListMetaItem">Depth: <div className="DataNumber">{(list as any)._level}</div></div>
     </div>
-    <div className="ListContent">
-      {nodeToDiv(list, (list as any)._root)}
+    <div className={"ListContent"}>
+      {whitebox ? nodeToDiv(list, (list as any)._root) : listToDiv(list)}
     </div>
   </div>
 }
@@ -179,6 +216,6 @@ function Content() {
 }
 
 render(
-  WrapStateContexts(<Content />, [data]),
+  WrapStateContexts(<Content />, [data, optionWhitebox]),
   parentNode, replaceNode
 )
