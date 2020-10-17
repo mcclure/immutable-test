@@ -37,6 +37,15 @@ function handle(f:()=>void) {
   }
 }
 
+// Convert strings into string lengths. Currently unused but try monkeypatching this as second arg to SortedList() below
+function lengthKey(value:number|string) {
+  if (!value)
+    return 0
+  if (typeof value == "number")
+    return value
+  return value.length
+}
+
 // ----- Data -----
 
 type dataListType = SortedList<number|string>
