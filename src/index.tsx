@@ -214,8 +214,8 @@ class ListEdit extends Component<ListEditProps, ListEditState> {
   handleRandom(pct:number) {
     const {targetState, targetHistory} = this.props
     this.historyTruncate()
-    randomSequence(targetState, targetHistory, 100, pct)
     this.setState({historyIndex:0,historyLength:2}) // length is a lie but that's ok; we don't display it
+    randomSequence(targetState, targetHistory, 100, pct)
   }
   render() {
     const {targetState, targetHistory} = this.props
