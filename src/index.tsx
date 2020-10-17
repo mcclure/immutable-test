@@ -16,6 +16,7 @@ function numericOrUnchanged<T>(str:T) : number|T {
   return isNumber ? parsedAsNumber : str
 }
 
+// Pretty print a JS value
 function typedFormat(v:any) {
   let type = typeof v
   if (type == "string")
@@ -27,6 +28,7 @@ function typedFormat(v:any) {
   return <div className="DataOther">{String(v)}</div>
 }
 
+// Turn a function into a compliant event handler
 function handle(f:()=>void) {
   return (e:JSX.TargetedEvent) => {
     e.preventDefault();
@@ -40,13 +42,20 @@ function handle(f:()=>void) {
 type dataListType = SortedList<number|string>
 type dataStateType = State<dataListType>
 
+enum DisplayMode {
+  Whitebox,
+  Blackbox,
+  Hide
+}
+
 const HISTORYMAX = 20
 const data : dataStateType = new State(SortedList<number|string>())
-const optionWhitebox = new State(true);
+const displayMode = new State(DisplayMode.Whitebox);
 const history:dataListType[] = []
 
 // ----- Data processes -----
 
+// Set React state and also save value in history
 function newData(state:dataStateType, history:dataListType[], value:dataListType) {
   history.push(value)
   if (history.length > HISTORYMAX)
@@ -55,6 +64,7 @@ function newData(state:dataStateType, history:dataListType[], value:dataListType
   //console.log(value)
 }
 
+// Functions for correctness-checking SortedLists
 function findFirstFailure<T>(list:SortedList<T>) {
   let haveLast = false
   let last
@@ -163,14 +173,15 @@ function randomSequence<T>(targetState:dataStateType, targetHistory:dataListType
 // This convention does prevent context and linkState from being used together.
 // But maybe that's a good thing.
 
-// Modal "pick a username" box
-type ListEditState = {entry:string,whitebox:boolean,historyIndex:number,historyLength:number}
+// Controls component.
+// Note the mode logic is unfortunately duplicated between context and state to keep the above rules
+type ListEditState = {entry:string,mode:DisplayMode,historyIndex:number,historyLength:number}
 type ListEditProps = {targetState:dataStateType, targetHistory:dataListType[]}
 class ListEdit extends Component<ListEditProps, ListEditState> {
   constructor(props:ListEditProps) {
     super(props)
     this.state = {
-      entry:'', whitebox:optionWhitebox.value,
+      entry:'', mode:displayMode.value,
       historyIndex:0, historyLength:this.props.targetHistory.length
     }
   }
@@ -185,6 +196,7 @@ class ListEdit extends Component<ListEditProps, ListEditState> {
     this.historyTruncate()
     newData(targetState, targetHistory, value)
     this.setState({entry:'',historyIndex:0,historyLength:targetHistory.length})
+    console.log(value) // Doing this here means values will be printed on manual changes but not during tests.
   }
   handlePush() {
     const {targetState} = this.props
@@ -193,7 +205,6 @@ class ListEdit extends Component<ListEditProps, ListEditState> {
       console.log(`Pushing: ${String(entry)}`)
       this.newData(targetState.value.add(entry))
       this.setState({entry:''})
-      console.log(targetState.value)
     }
   }
   handleShift() {
@@ -218,6 +229,14 @@ class ListEdit extends Component<ListEditProps, ListEditState> {
     this.setState({historyIndex:0,historyLength:2}) // length is a lie but that's ok; we don't display it
     randomSequence(targetState, targetHistory, count, pct)
   }
+  buildModeSelector(label:string, goalMode:DisplayMode) {
+    return <a
+      href="#"
+      onClick={handle(()=>{displayMode.set(goalMode);this.setState({mode:goalMode})})}
+      className={this.state.mode == goalMode ? "Highlighted" : undefined}>
+        {label}
+    </a>
+  }
   render() {
     const {targetState, targetHistory} = this.props
     const {historyIndex} = this.state
@@ -233,12 +252,9 @@ class ListEdit extends Component<ListEditProps, ListEditState> {
         </form>
         <div className="EditBoxSpacer">|</div>
         <div className="EditBoxSpecial">
-          <a href="#" onClick={handle(()=>{optionWhitebox.set(true);this.setState({whitebox:true})})} className={this.state.whitebox ? "Highlighted" : undefined}>
-            White Box
-          </a>
-          <a href="#" onClick={handle(()=>{optionWhitebox.set(false);this.setState({whitebox:false})})} className={this.state.whitebox ? undefined : "Highlighted"}>
-            Black Box
-          </a>
+          {this.buildModeSelector("White box", DisplayMode.Whitebox)}
+          {this.buildModeSelector("Black box", DisplayMode.Blackbox)}
+          {this.buildModeSelector("Hide", DisplayMode.Hide)}
           <div className="EditBoxSpacer">|</div>
           <input type="button" disabled={historyIndex >= targetHistory.length-1}
             onClick={handle(()=>this.handleHistory(1))} value="<Hist" />
@@ -248,14 +264,15 @@ class ListEdit extends Component<ListEditProps, ListEditState> {
           <div className="EditBoxSpacer">|</div>
           <input type="button" onClick={handle(()=>this.handleRandom(100, 2/3))} value="Random 100+" />
           <input type="button" onClick={handle(()=>this.handleRandom(100, 1/3))} value="Random 100-" />
-          <input type="button" onClick={handle(()=>this.handleRandom(100000, 2/3))} value="Random 100000+" />
-          <input type="button" onClick={handle(()=>this.handleRandom(100000, 1/3))} value="Random 100000-" />
+          <input type="button" onClick={handle(()=>this.handleRandom(10000, 2/3))} value="Random 10000+" />
+          <input type="button" onClick={handle(()=>this.handleRandom(10000, 1/3))} value="Random 10000-" />
         </div>
       </div>
     )
   }
 }
 
+// "Whitebox" display
 // None of the VNode stuff is exported, so this has to all be untyped.
 // This is violating abstraction boundaries in order to debug internal structures.
 function nodeToDiv(list:any, node:any) {
@@ -297,6 +314,7 @@ function nodeToDiv(list:any, node:any) {
   }
 }
 
+// "Blackbox" display
 function listToDiv<T>(list:SortedList<T>) {
   const display = []
   let haveLast = false
@@ -316,18 +334,24 @@ function listToDiv<T>(list:SortedList<T>) {
   </div>
 }
 
+// Display area component
 function ListDisplay<T>({targetState}:{targetState:State<SortedList<T>>}) {
   const list = targetState.get()
-  const whitebox = optionWhitebox.get()
+  const mode = displayMode.get()
+  let content
+  if (mode != DisplayMode.Hide) {
+    const whitebox = mode == DisplayMode.Whitebox
+    content = <div className={whitebox ? "ListContent" : "ListContentOrdered"}>
+      {whitebox ? nodeToDiv(list, (list as any)._root) : listToDiv(list)}
+    </div>
+  }
 
   return <div className="ListDisplay">
     <div className="ListMeta">
       <div className="ListMetaItem">Size: <div className="DataNumber">{(list as any).size}</div></div>
       <div className="ListMetaItem">Depth: <div className="DataNumber">{(list as any)._level}</div></div>
     </div>
-    <div className={whitebox ? "ListContent" : "ListContentOrdered"}>
-      {whitebox ? nodeToDiv(list, (list as any)._root) : listToDiv(list)}
-    </div>
+    {content}
   </div>
 }
 
@@ -345,6 +369,6 @@ function Content() {
 }
 
 render(
-  WrapStateContexts(<Content />, [data, optionWhitebox]),
+  WrapStateContexts(<Content />, [data, displayMode]),
   parentNode, replaceNode
 )
