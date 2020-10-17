@@ -37,12 +37,23 @@ function handle(f:()=>void) {
 
 // ----- Data -----
 
-type dataListType = State<SortedList<number|string>>
+type dataListType = SortedList<number|string>
+type dataStateType = State<dataListType>
 
-const data : dataListType = new State(SortedList<number|string>())
+const HISTORYMAX = 20
+const data : dataStateType = new State(SortedList<number|string>())
 const optionWhitebox = new State(true);
+const history:dataListType[] = []
 
 // ----- Data processes -----
+
+function newData(state:dataStateType, history:dataListType[], value:dataListType) {
+  history.push(value)
+  if (history.length > HISTORYMAX)
+    history.shift()
+  state.set(value)
+  //console.log(value)
+}
 
 function findFirstFailure<T>(list:SortedList<T>) {
   let haveLast = false
@@ -61,18 +72,18 @@ function findFirstFailure<T>(list:SortedList<T>) {
   return null
 }
 
-function randomSequence<T>(targetState:State<SortedList<number | T>>, count:number, pctAdd : number) {
+function randomSequence<T>(targetState:dataStateType, targetHistory:dataListType[], count:number, pctAdd : number) {
   const add = Math.random() < pctAdd
   const value = targetState.value
 
   if (add || value.size == 0) {
     const addValue = Math.round(Math.random()*10000)
     console.log(`Random sequence ${count}, add ${ addValue }`)
-    targetState.set( value.add(addValue) )
+    newData(targetState, targetHistory, value.add(addValue) )
   } else {
     const side = Math.random() < 0.5
     console.log(`Random sequence ${count}, pop ${ side ? value.first() : value.last() }`)
-    targetState.set( side ? value.shift() : value.pop() )
+    newData(targetState, targetHistory, side ? value.shift() : value.pop() )
   }
 
   const failure = findFirstFailure(targetState.value);
@@ -80,7 +91,7 @@ function randomSequence<T>(targetState:State<SortedList<number | T>>, count:numb
     throw new Error(`Ordering failure at index ${failure[0]}, value ${failure[1]}`)
 
   if (count > 1)
-    requestAnimationFrame(() => { randomSequence(targetState, count-1, pctAdd) })
+    requestAnimationFrame(() => { randomSequence(targetState, targetHistory, count-1, pctAdd) })
 }
 
 // ----- Display helpers -----
@@ -92,34 +103,63 @@ function randomSequence<T>(targetState:State<SortedList<number | T>>, count:numb
 // But maybe that's a good thing.
 
 // Modal "pick a username" box
-type ListEditState = {entry:string,whitebox:boolean}
-type ListEditProps = {targetState:dataListType}
+type ListEditState = {entry:string,whitebox:boolean,historyIndex:number,historyLength:number}
+type ListEditProps = {targetState:dataStateType, targetHistory:dataListType[]}
 class ListEdit extends Component<ListEditProps, ListEditState> {
   constructor(props:ListEditProps) {
     super(props)
-    this.state = {entry:'',whitebox:optionWhitebox.value}
+    this.state = {
+      entry:'', whitebox:optionWhitebox.value,
+      historyIndex:0, historyLength:this.props.targetHistory.length
+    }
+  }
+  historyTruncate() {
+    const {targetHistory} = this.props
+    const {historyIndex} = this.state
+    if (historyIndex > 0)
+      targetHistory.length -= historyIndex
+  }
+  newData(value:dataListType) { // Set data while managing history stack
+    const {targetState, targetHistory} = this.props
+    this.historyTruncate()
+    newData(targetState, targetHistory, value)
+    this.setState({entry:'',historyIndex:0,historyLength:targetHistory.length})
   }
   handlePush() {
-    const targetState = this.props.targetState
+    const {targetState} = this.props
     const entry = numericOrUnchanged(this.state.entry)
     if (entry != null) { // Intentionally catches undefined also
       console.log(`Pushing: ${String(entry)}`)
-      targetState.set(targetState.value.add(entry))
+      this.newData(targetState.value.add(entry))
       this.setState({entry:''})
     }
   }
   handleShift() {
-    const targetState = this.props.targetState
+    const {targetState} = this.props
     console.log(`Shifting: ${String(targetState.value.first())}`)
-    targetState.set(targetState.value.shift())
+    this.newData(targetState.value.shift())
   }
   handlePop() {
-    const targetState = this.props.targetState
+    const {targetState} = this.props
     console.log(`Popping: ${String(targetState.value.last())}`)
-    targetState.set(targetState.value.pop())
+    this.newData(targetState.value.pop())
+  }
+  handleHistory(dir:number) {
+    const {targetState, targetHistory} = this.props
+    const historyIndex = this.state.historyIndex + dir
+    targetState.set(targetHistory[targetHistory.length-historyIndex-1])
+    this.setState({historyIndex,historyLength:targetHistory.length})
+  }
+  handleRandom(pct:number) {
+    const {targetState, targetHistory} = this.props
+    this.historyTruncate()
+    randomSequence(targetState, targetHistory, 100, pct)
+    this.setState({historyIndex:0,historyLength:1}) // length is a lie but that's ok; we don't display it
   }
   render() {
-    const targetState = this.props.targetState
+    const {targetState, targetHistory} = this.props
+    const {historyIndex} = this.state
+console.log(historyIndex, targetHistory.length)
     return (
       <div className="EditBox">
         <form className="EditBoxEntry" onSubmit={handle(()=>this.handlePush())}>
@@ -139,8 +179,14 @@ class ListEdit extends Component<ListEditProps, ListEditState> {
             Black Box
           </a>
           <div className="EditBoxSpacer">|</div>
-          <input type="button" onClick={handle(()=>randomSequence(targetState, 100, 2/3))} value="Random 100+" />
-          <input type="button" onClick={handle(()=>randomSequence(targetState, 100, 1/3))} value="Random 100-" />
+          <input type="button" disabled={historyIndex >= targetHistory.length-1}
+            onClick={handle(()=>this.handleHistory(1))} value="<Hist" />
+          <div className="EditBoxSpacer" style="width:3em; text-align:center">{historyIndex}</div>
+          <input type="button" disabled={historyIndex <= 0}
+            onClick={handle(()=>this.handleHistory(-1))} value="Hist>" />
+          <div className="EditBoxSpacer">|</div>
+          <input type="button" onClick={handle(()=>this.handleRandom(2/3))} value="Random 100+" />
+          <input type="button" onClick={handle(()=>this.handleRandom(1/3))} value="Random 100-" />
         </div>
       </div>
     )
@@ -210,7 +256,6 @@ function listToDiv<T>(list:SortedList<T>) {
 function ListDisplay<T>({targetState}:{targetState:State<SortedList<T>>}) {
   const list = targetState.get()
   const whitebox = optionWhitebox.get()
-  console.log(list) // FIXME: Shouldn't trigger on whitebox change
 
   return <div className="ListDisplay">
     <div className="ListMeta">
@@ -231,7 +276,7 @@ let replaceNode = document.getElementById("initial-loading")
 function Content() {
   return (
     <div className="Content">
-      <ListEdit targetState={data} />
+      <ListEdit targetState={data} targetHistory={history} />
       <ListDisplay targetState={data} />
     </div>)
 }
