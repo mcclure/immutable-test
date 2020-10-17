@@ -72,10 +72,53 @@ function findFirstFailure<T>(list:SortedList<T>) {
   return null
 }
 
+function findMinmaxFailureNode<T>(node:any, depth:number, depthMax:number) : [number, string, any] { // Breaks abstraction boundaries so uses any
+  const {array, min, max} = node
+  if (depth < depthMax-1) { // Branch
+    if (min != array[0].min)
+      return [depth, "min", min]
+    if (max != array[array.length-1].max)
+      return [depth, "max", max]
+
+    for (let newNode of array) {
+      const test = findMinmaxFailureNode(newNode, depth+1, depthMax)
+      if (test)
+        return test
+    }
+  } else { // Leaf
+    if (min != array[0])
+      return [depth, "min", min]
+    if (max != array[array.length-1])
+      return [depth, "max", max]
+  }
+  return null
+}
+function findMinmaxFailure<T>(list:SortedList<T>) {
+  if (list.size > 0)
+    return findMinmaxFailureNode((list as any)._root, 0, (list as any)._level)
+  return null
+}
+
+function findHeadFailure<T>(list:SortedList<T>) {
+  let node = (list as any)._root;
+  for(let level = 0; level < (list as any)._level-1; level++)
+    node = node.array[0]
+  return node != (list as any)._head;
+}
+
+function findTailFailure<T>(list:SortedList<T>) {
+  let node = (list as any)._root;
+  for(let level = 0; level < (list as any)._level-1; level++)
+    node = node.array[node.array.length-1]
+  return node != (list as any)._tail;
+}
+
+// Repeat this many times to test the structure
 function randomSequence<T>(targetState:dataStateType, targetHistory:dataListType[], count:number, pctAdd : number) {
   const add = Math.random() < pctAdd
   const value = targetState.value
 
+  // Make a random change to the list
   if (add || value.size == 0) {
     const addValue = Math.round(Math.random()*10000)
     console.log(`Random sequence ${count}, add ${ addValue }`)
@@ -86,9 +129,27 @@ function randomSequence<T>(targetState:dataStateType, targetHistory:dataListType
     newData(targetState, targetHistory, side ? value.shift() : value.pop() )
   }
 
-  const failure = findFirstFailure(targetState.value);
-  if (failure)
-    throw new Error(`Ordering failure at index ${failure[0]}, value ${failure[1]}`)
+  // Ensure list items in order
+  {
+    const failure = findFirstFailure(targetState.value)
+    if (failure) {
+      const [index, value] = failure
+      throw new Error(`Ordering failure at index ${index}, value ${value}`)
+    }
+  }
+  // Ensure internal min/max tracking is correct
+  {
+    const failure = findMinmaxFailure(targetState.value)
+    if (failure) {
+      const [depth, kind, value] = failure
+      throw new Error(`Min/max failure: wrong ${kind} at depth ${depth}, value ${value}`)
+    }
+  }
+  // Ensure head/tail tracking is correct
+  if (findHeadFailure(targetState.value))
+    throw new Error("Head failure")
+  if (findTailFailure(targetState.value))
+    throw new Error("Tail failure")
 
   if (count > 1)
     requestAnimationFrame(() => { randomSequence(targetState, targetHistory, count-1, pctAdd) })
@@ -154,12 +215,11 @@ class ListEdit extends Component<ListEditProps, ListEditState> {
     const {targetState, targetHistory} = this.props
     this.historyTruncate()
     randomSequence(targetState, targetHistory, 100, pct)
-    this.setState({historyIndex:0,historyLength:1}) // length is a lie but that's ok; we don't display it
+    this.setState({historyIndex:0,historyLength:2}) // length is a lie but that's ok; we don't display it
   }
   render() {
     const {targetState, targetHistory} = this.props
     const {historyIndex} = this.state
-console.log(historyIndex, targetHistory.length)
     return (
       <div className="EditBox">
         <form className="EditBoxEntry" onSubmit={handle(()=>this.handlePush())}>
