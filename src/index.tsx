@@ -193,6 +193,7 @@ class ListEdit extends Component<ListEditProps, ListEditState> {
       console.log(`Pushing: ${String(entry)}`)
       this.newData(targetState.value.add(entry))
       this.setState({entry:''})
+      console.log(targetState.value)
     }
   }
   handleShift() {
@@ -211,11 +212,11 @@ class ListEdit extends Component<ListEditProps, ListEditState> {
     targetState.set(targetHistory[targetHistory.length-historyIndex-1])
     this.setState({historyIndex,historyLength:targetHistory.length})
   }
-  handleRandom(pct:number) {
+  handleRandom(count:number, pct:number) {
     const {targetState, targetHistory} = this.props
     this.historyTruncate()
     this.setState({historyIndex:0,historyLength:2}) // length is a lie but that's ok; we don't display it
-    randomSequence(targetState, targetHistory, 100, pct)
+    randomSequence(targetState, targetHistory, count, pct)
   }
   render() {
     const {targetState, targetHistory} = this.props
@@ -245,8 +246,10 @@ class ListEdit extends Component<ListEditProps, ListEditState> {
           <input type="button" disabled={historyIndex <= 0}
             onClick={handle(()=>this.handleHistory(-1))} value="Hist>" />
           <div className="EditBoxSpacer">|</div>
-          <input type="button" onClick={handle(()=>this.handleRandom(2/3))} value="Random 100+" />
-          <input type="button" onClick={handle(()=>this.handleRandom(1/3))} value="Random 100-" />
+          <input type="button" onClick={handle(()=>this.handleRandom(100, 2/3))} value="Random 100+" />
+          <input type="button" onClick={handle(()=>this.handleRandom(100, 1/3))} value="Random 100-" />
+          <input type="button" onClick={handle(()=>this.handleRandom(100000, 2/3))} value="Random 100000+" />
+          <input type="button" onClick={handle(()=>this.handleRandom(100000, 1/3))} value="Random 100000-" />
         </div>
       </div>
     )
